@@ -1,0 +1,7 @@
+cff-version: 1.2.0
+title: "Blueberry Ripeness Dataset"
+message: "Please cite the accompanying Scientific Data Data Descriptor after publication."
+type: dataset
+authors:
+  - name: "Blueberry Ripeness Dataset Contributors"
+year: 2026

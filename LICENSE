@@ -1,0 +1,10 @@
+License notice
+
+This repository is prepared for manuscript review and public release. Confirm the final institutional code and data licenses before making the repository public.
+
+Recommended licensing:
+
+- Code: MIT License or Apache License 2.0.
+- Dataset: Creative Commons Attribution 4.0 International (CC BY 4.0) or another institutional open-data license.
+
+The image and mask dataset is hosted separately and is governed by the license stated in the final data repository record.
