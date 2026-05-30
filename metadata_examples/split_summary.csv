@@ -1,0 +1,4 @@
+split,images,total_objects,green_immature_objects,pale_pink_objects,pink_turns_purple_objects,fully_ripe_objects,over_ripe_objects
+train,296,9710,6141,309,308,2856,96
+val,64,2099,1328,67,66,617,21
+test,64,2100,1328,67,66,618,21

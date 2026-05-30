@@ -1,0 +1,40 @@
+project_name: blueberry_ripeness_segmentation_validation
+output_root: outputs/synthetic_model_validation
+
+classes:
+  - green_immature
+  - pale_pink
+  - pink_turns_purple
+  - fully_ripe
+  - over_ripe
+
+training:
+  seed: 42
+  epochs: 60
+  batch_size: 4
+  num_workers: 4
+  lr: 0.0003
+  weight_decay: 0.05
+  early_stopping_patience: 8
+  amp: true
+  pretrained: true
+  grad_clip_norm: 1.0
+
+task_defaults:
+  segmentation:
+    image_size: 512
+    batch_size: 4
+    epochs: 60
+    val_metric: miou_foreground
+
+tasks:
+  segmentation:
+    fpn_convnextv2_tiny:
+      display_name: FPN ConvNeXtV2-T
+      family: Modern CNN segmentation
+      framework: timm_fpn
+      model_name: convnextv2_tiny.fcmae_ft_in22k_in1k
+      image_size: 512
+      batch_size: 4
+      epochs: 60
+      val_metric: miou_foreground

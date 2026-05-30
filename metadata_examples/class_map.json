@@ -1,0 +1,62 @@
+{
+  "background": {
+    "id": 0,
+    "name": "background"
+  },
+  "classes": [
+    {
+      "id": 1,
+      "name": "green_immature",
+      "display_name": "Green immature",
+      "color_rgb": [
+        35,
+        170,
+        70
+      ]
+    },
+    {
+      "id": 2,
+      "name": "pale_pink",
+      "display_name": "Pale pink",
+      "color_rgb": [
+        255,
+        150,
+        190
+      ]
+    },
+    {
+      "id": 3,
+      "name": "pink_turns_purple",
+      "display_name": "Pink turns purple",
+      "color_rgb": [
+        155,
+        70,
+        210
+      ]
+    },
+    {
+      "id": 4,
+      "name": "fully_ripe",
+      "display_name": "Fully ripe",
+      "color_rgb": [
+        45,
+        105,
+        230
+      ]
+    },
+    {
+      "id": 5,
+      "name": "over_ripe",
+      "display_name": "Over ripe",
+      "color_rgb": [
+        210,
+        95,
+        35
+      ]
+    }
+  ],
+  "semantic_ignore_value": 255,
+  "binary_mask_positive_value": 255,
+  "binary_mask_background_value": 0,
+  "source_mask_threshold": 127
+}
