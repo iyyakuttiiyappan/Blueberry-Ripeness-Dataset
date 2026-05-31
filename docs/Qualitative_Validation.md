@@ -9,4 +9,3 @@ The qualitative checks focus on:
 - Preservation of plant geometry and fruit position.
 - Identification of difficult cases such as occlusion, dense clusters, small berries, shadows, and overlapping annotations.
 
-These qualitative checks should be described as inspection aids rather than statistical evidence.
