@@ -6,7 +6,7 @@ This repository contains the code and documentation for a high-resolution greenh
 
 The image and mask data are hosted separately because the curated release is larger than a normal GitHub repository.
 
-Institutional drive download/review folder:
+Institutional drive download/review folder (please contact iyyakutti.ganapathi@ku.ac.ae):
 
 https://kuacae-my.sharepoint.com/:f:/g/personal/iyyakutti_ganapathi_ku_ac_ae/IgA50zXBVJdqS7uqbg0ZaHjCAUUEo0-4_MDTx5-sVKXWIkI
 
