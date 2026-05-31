@@ -4,7 +4,7 @@ The full image and mask dataset is not stored in this GitHub repository.
 
 Institutional drive download/review folder:
 
-https://kuacae-my.sharepoint.com/:f:/g/personal/iyyakutti_ganapathi_ku_ac_ae/IgA50zXBVJdqS7uqbg0ZaHjCAdMg9QA4KlIg2OfNmAzytnc?e=tgNy7Q
+https://kuacae-my.sharepoint.com/:f:/g/personal/iyyakutti_ganapathi_ku_ac_ae/IgA50zXBVJdqS7uqbg0ZaHjCAUUEo0-4_MDTx5-sVKXWIkI
 
 Download the primary real dataset archive:
 
