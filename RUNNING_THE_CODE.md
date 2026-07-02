@@ -1,8 +1,8 @@
 # Running The Code
 
-These commands assume you are running from the root of this GitHub repository.
+These instructions assume you are working from the root of this GitHub repository.
 
-## 1. Create A Python Environment
+## 1. Install Dependencies
 
 Windows PowerShell:
 
@@ -22,30 +22,24 @@ python -m pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-The model-validation scripts require PyTorch. Install the PyTorch build that matches your CUDA/CPU environment if the default `pip install -r requirements.txt` command does not provide the right build.
+Install a PyTorch build that matches your GPU/CPU environment if needed.
 
 ## 2. Download The Dataset
 
-Download the dataset archive from the institutional drive folder:
+Temporary institutional review folder:
 
-https://kuacae-my.sharepoint.com/:f:/g/personal/iyyakutti_ganapathi_ku_ac_ae/IgA50zXBVJdqS7uqbg0ZaHjCAUUEo0-4_MDTx5-sVKXWIkI
-
-For normal use, download and extract:
-
-```text
-blueberry_ripeness_real_curated_dataset_v1.zip
-```
+https://kuacae-my.sharepoint.com/:f:/g/personal/iyyakutti_ganapathi_ku_ac_ae/IgA50zXBVJdqS7uqbg0ZaHjCAdMg9QA4KlIg2OfNmAzytnc?e=tgNy7Q
 
 Recommended extraction location:
 
 ```text
-outputs/scientific_data_release/
+outputs/scientific_data_release_514/
 ```
 
-After extraction, the real dataset should contain:
+The extracted curated dataset should contain:
 
 ```text
-outputs/scientific_data_release/
+outputs/scientific_data_release_514/
   dataset/images/
   dataset/masks_binary/
   dataset/masks_semantic/
@@ -55,36 +49,33 @@ outputs/scientific_data_release/
   reports/
 ```
 
-## 3. Use The Already-Curated Dataset
+## 3. Use The Curated Dataset Directly
 
-Most users do not need to rerun preprocessing. Use the extracted release directly:
+For semantic segmentation:
 
-- RGB images: `outputs/scientific_data_release/dataset/images/`
-- Semantic masks: `outputs/scientific_data_release/dataset/masks_semantic/`
-- Binary masks: `outputs/scientific_data_release/dataset/masks_binary/<class>/`
-- Splits: `outputs/scientific_data_release/splits/train.txt`, `val.txt`, `test.txt`
-- Manifest: `outputs/scientific_data_release/metadata/dataset_manifest.csv`
+- inputs: `outputs/scientific_data_release_514/dataset/images/`
+- targets: `outputs/scientific_data_release_514/dataset/masks_semantic/`
+- ignore label: `255`
 
-Semantic mask labels:
+For per-class binary masks:
 
 ```text
-0   background
-1   green_immature
-2   pale_pink
-3   pink_turns_purple
-4   fully_ripe
-5   over_ripe
-255 overlap/ignore
+outputs/scientific_data_release_514/dataset/masks_binary/<class_name>/
 ```
 
-## 4. Rebuild The Curated Release From Raw Source Folders
-
-Only run this step if you have the original raw folder structure.
-
-Expected raw layout:
+For counts:
 
 ```text
-data/
+outputs/scientific_data_release_514/metadata/image_level_counts.csv
+outputs/scientific_data_release_514/metadata/dataset_manifest.csv
+```
+
+## 4. Rebuild The Curated Release From Raw/Combined Folders
+
+Only run this step if you have the original raw/combined working layout:
+
+```text
+data/combined_514/
   images/
   green_immature/
   pale_pink/
@@ -99,113 +90,48 @@ Command:
 
 ```bash
 python scripts/prepare_scientific_data_release.py \
-  --data-root data \
-  --output-root outputs/scientific_data_release \
+  --data-root data/combined_514 \
+  --output-root outputs/scientific_data_release_514 \
   --threshold 127 \
   --force
 ```
 
-Main outputs:
+## 5. Reproduce Annotation Preparation For Benchmark Runs
 
-```text
-outputs/scientific_data_release/dataset/
-outputs/scientific_data_release/metadata/
-outputs/scientific_data_release/splits/
-outputs/scientific_data_release/reports/
-outputs/scientific_data_release/figures/
-```
+The benchmark code uses the raw/combined working layout because it builds crops and task-specific annotation files.
 
-## 5. Optional: Create Natural Synthetic Training Augmentation
-
-Synthetic data should be used only as training augmentation. Do not report it as additional independent real observations.
+Edit `configs/fresh_benchmark_514.yaml` if your paths differ, then run:
 
 ```bash
-python scripts/create_natural_synthetic_dataset.py \
-  --release-root outputs/scientific_data_release \
-  --output-root outputs/synthetic_balanced_natural_augmentation \
-  --short-side 1024 \
-  --seed 2026 \
-  --force
+python scripts/fresh_prepare_annotations.py --config configs/fresh_benchmark_514.yaml --rebuild
 ```
 
-Expected output:
+## 6. Reproduce The Main Technical-Validation Baselines
 
-```text
-outputs/synthetic_balanced_natural_augmentation/
-```
-
-## 6. Smoke-Test Model Validation
-
-This runs a tiny real-only segmentation test to confirm the environment and paths work.
+Semantic segmentation baseline:
 
 ```bash
-python scripts/run_natural_synthetic_segmentation_validation.py \
-  --config configs/segmentation_validation.yaml \
-  --release-root outputs/scientific_data_release \
-  --output-root outputs/synthetic_model_validation_smoke \
-  --variants real_only \
-  --epochs 1 \
-  --batch-size 2 \
-  --limit 8 \
-  --no-pretrained
+python scripts/fresh_run_task.py \
+  --config configs/fresh_benchmark_514.yaml \
+  --task segmentation \
+  --method fpn_convnextv2_tiny \
+  --seed 42
 ```
 
-## 7. Reproduce Full Segmentation Validation
-
-Real-only baseline:
+Counting baseline:
 
 ```bash
-python scripts/run_natural_synthetic_segmentation_validation.py \
-  --config configs/segmentation_validation.yaml \
-  --release-root outputs/scientific_data_release \
-  --output-root outputs/synthetic_model_validation \
-  --variants real_only \
-  --epochs 60 \
-  --batch-size 4 \
-  --device cuda
+python scripts/fresh_run_task.py \
+  --config configs/fresh_benchmark_514.yaml \
+  --task counting \
+  --method count_efficientnetv2_s \
+  --seed 42
 ```
 
-Synthetic comparison, after creating or downloading the optional synthetic package:
+Summarize benchmark outputs:
 
 ```bash
-python scripts/run_natural_synthetic_segmentation_validation.py \
-  --config configs/segmentation_validation.yaml \
-  --release-root outputs/scientific_data_release \
-  --synthetic-root outputs/synthetic_balanced_natural_augmentation \
-  --output-root outputs/synthetic_model_validation \
-  --variants real_only synthetic_only real_plus_synthetic \
-  --epochs 60 \
-  --batch-size 4 \
-  --device cuda
+python scripts/fresh_summarize.py --config configs/fresh_benchmark_514.yaml
 ```
 
-Class-balanced cross-entropy comparison:
-
-```bash
-python scripts/run_natural_synthetic_segmentation_validation.py \
-  --config configs/segmentation_validation.yaml \
-  --release-root outputs/scientific_data_release \
-  --synthetic-root outputs/synthetic_balanced_natural_augmentation \
-  --output-root outputs/synthetic_model_validation_weighted \
-  --variants real_only real_plus_synthetic \
-  --loss-mode balanced_ce \
-  --epochs 60 \
-  --batch-size 4 \
-  --device cuda
-```
-
-Main result tables are written to:
-
-```text
-<output-root>/results/tables/
-```
-
-## 8. Verify Downloaded Archives With SHA256
-
-The data repository includes `SHA256SUMS.txt`. To verify a downloaded archive on Windows:
-
-```powershell
-Get-FileHash "blueberry_ripeness_real_curated_dataset_v1.zip" -Algorithm SHA256
-```
-
-The hash should match the corresponding line in `SHA256SUMS.txt`.
+For a quick path check, add `--epochs 1 --limit 12` to `fresh_run_task.py`.

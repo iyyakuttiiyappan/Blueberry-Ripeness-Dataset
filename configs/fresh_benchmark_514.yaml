@@ -1,0 +1,846 @@
+project_name: silal_blueberry_multitask_benchmark_514
+data_root: data/combined_514
+output_root: outputs/fresh_benchmark_514
+
+classes:
+  - green_immature
+  - pale_pink
+  - pink_turns_purple
+  - fully_ripe
+  - over_ripe
+
+paths:
+  image_dir: images
+  count_workbook: Image Wise Classname Count.xlsx
+  binary_mask_aliases: ["ALL", "All", "all", "Overall", "overall"]
+  fixed_split_manifest: outputs/scientific_data_release_514/metadata/dataset_manifest.csv
+
+split:
+  train: 0.70
+  val: 0.15
+  test: 0.15
+  seed: 42
+
+annotation:
+  image_extensions: [".jpg", ".jpeg", ".png", ".tif", ".tiff"]
+  mask_threshold: 127
+  min_component_area: 64
+  crop_padding: 0.18
+  crop_min_size: 20
+  save_overlay_count: 12
+  yolo_image_size: 1024
+
+training:
+  seed: 42
+  epochs: 40
+  quick_epochs: 2
+  batch_size: 8
+  num_workers: 4
+  lr: 0.0003
+  weight_decay: 0.05
+  early_stopping_patience: 8
+  amp: true
+  pretrained: true
+  grad_clip_norm: 1.0
+
+ours:
+  method: berrymtl_unified
+  display_name: BerryMTL-ConvNeXtV2 (ours)
+  model_name: convnextv2_tiny.fcmae_ft_in22k_in1k
+  image_size: 512
+  batch_size: 4
+  epochs: 60
+  early_stopping_patience: 8
+  lr: 0.0003
+  weight_decay: 0.05
+  count_loss_weight: 0.04
+  dice_loss_weight: 0.6
+  min_component_area: 8
+
+ours_roi_attention:
+  method: berrymtl_roi_attention
+  display_name: BerryMTL-ROI-Attention (ours)
+  model_name: convnextv2_tiny.fcmae_ft_in22k_in1k
+  image_size: 512
+  batch_size: 3
+  epochs: 60
+  early_stopping_patience: 8
+  lr: 0.00025
+  weight_decay: 0.05
+  decoder_channels: 128
+  roi_channels: 192
+  roi_size: 7
+  count_loss_weight: 0.035
+  dice_loss_weight: 0.6
+  classification_loss_weight: 0.55
+  classification_score_weight: 0.25
+  count_score_weight: 0.002
+  label_smoothing: 0.03
+  min_component_area: 8
+  classify_detection_boxes: true
+
+ours_roi_attention_finetune:
+  method: berrymtl_roi_attention_ft
+  display_name: BerryMTL-ROI-Attention FT (ours)
+  model_name: convnextv2_tiny.fcmae_ft_in22k_in1k
+  image_size: 512
+  batch_size: 4
+  epochs: 30
+  early_stopping_patience: 8
+  lr: 0.0008
+  weight_decay: 0.03
+  decoder_channels: 128
+  roi_channels: 192
+  roi_size: 7
+  count_loss_weight: 0.0
+  dice_loss_weight: 0.0
+  classification_loss_weight: 1.0
+  classification_score_weight: 0.35
+  count_score_weight: 0.002
+  label_smoothing: 0.02
+  min_component_area: 8
+  classify_detection_boxes: false
+  init_from_unified: true
+  train_roi_only: true
+
+ours_centerdet:
+  method: berrymtl_centerdet
+  display_name: BerryMTL-CenterDet (ours)
+  model_name: convnextv2_tiny.fcmae_ft_in22k_in1k
+  image_size: 512
+  batch_size: 3
+  epochs: 60
+  early_stopping_patience: 8
+  lr: 0.00025
+  weight_decay: 0.05
+  decoder_channels: 128
+  roi_channels: 192
+  roi_size: 7
+  count_loss_weight: 0.035
+  dice_loss_weight: 0.6
+  classification_loss_weight: 0.55
+  detection_loss_weight: 0.45
+  density_loss_weight: 0.02
+  density_count_loss_weight: 0.15
+  classification_score_weight: 0.25
+  count_score_weight: 0.002
+  detection_score_weight: 0.01
+  label_smoothing: 0.03
+  score_threshold: 0.05
+  top_k: 300
+  nms_iou: 0.45
+  classify_detection_boxes: true
+
+ours_centerdet_plus:
+  method: berrymtl_centerdet_plus
+  display_name: BerryMTL-CenterDet+Contrastive (ours)
+  model_name: convnextv2_tiny.fcmae_ft_in22k_in1k
+  image_size: 512
+  batch_size: 3
+  epochs: 28
+  early_stopping_patience: 6
+  lr: 0.00008
+  weight_decay: 0.04
+  decoder_channels: 128
+  roi_channels: 192
+  roi_size: 7
+  count_loss_weight: 0.025
+  dice_loss_weight: 0.55
+  classification_loss_weight: 0.65
+  detection_loss_weight: 0.75
+  density_loss_weight: 0.025
+  density_count_loss_weight: 0.15
+  contrastive_loss_weight: 0.08
+  contrastive_temperature: 0.12
+  classification_score_weight: 0.28
+  count_score_weight: 0.002
+  detection_score_weight: 0.008
+  label_smoothing: 0.03
+  score_threshold: 0.05
+  top_k: 260
+  nms_iou: 0.40
+  classify_detection_boxes: true
+  init_from_centerdet: true
+
+ours_centerdet_agnostic:
+  method: berrymtl_centerdet_agnostic
+  display_name: BerryMTL-AgnosticCenter+ROI (ours)
+  model_name: convnextv2_tiny.fcmae_ft_in22k_in1k
+  image_size: 512
+  batch_size: 3
+  epochs: 32
+  early_stopping_patience: 7
+  lr: 0.00008
+  weight_decay: 0.04
+  decoder_channels: 128
+  roi_channels: 192
+  roi_size: 7
+  count_loss_weight: 0.025
+  dice_loss_weight: 0.55
+  classification_loss_weight: 0.65
+  detection_loss_weight: 0.85
+  density_loss_weight: 0.025
+  density_count_loss_weight: 0.15
+  contrastive_loss_weight: 0.06
+  contrastive_temperature: 0.12
+  classification_score_weight: 0.28
+  count_score_weight: 0.002
+  detection_score_weight: 0.006
+  label_smoothing: 0.03
+  score_threshold: 0.08
+  top_k: 260
+  nms_iou: 0.35
+  sahi_original_tiles: true
+  sahi_tile_size: 1536
+  sahi_overlap: 0.25
+  sahi_score_threshold: 0.08
+  sahi_nms_iou: 0.35
+  sahi_top_k: 260
+  sahi_tile_top_k: 120
+  classify_detection_boxes: true
+  class_agnostic_detection: true
+  init_from_centerdet: true
+  init_source_patterns:
+    - "*_berrymtl_centerdet_plus_seed*"
+    - "*_berrymtl_centerdet_plus_calibrated_seed*"
+    - "*_berrymtl_centerdet_calibrated_seed*"
+    - "*_berrymtl_centerdet_seed*"
+
+ours_centerdet_tiletrain:
+  method: berrymtl_centerdet_tiletrain
+  display_name: BerryMTL-AgnosticCenter+ROI TileTrain (ours)
+  model_name: convnextv2_tiny.fcmae_ft_in22k_in1k
+  image_size: 512
+  batch_size: 3
+  epochs: 26
+  early_stopping_patience: 6
+  lr: 0.00006
+  weight_decay: 0.04
+  decoder_channels: 128
+  roi_channels: 192
+  roi_size: 7
+  count_loss_weight: 0.02
+  dice_loss_weight: 0.50
+  classification_loss_weight: 0.65
+  detection_loss_weight: 1.00
+  density_loss_weight: 0.025
+  density_count_loss_weight: 0.12
+  contrastive_loss_weight: 0.06
+  contrastive_temperature: 0.12
+  classification_score_weight: 0.28
+  count_score_weight: 0.002
+  detection_score_weight: 0.010
+  label_smoothing: 0.03
+  score_threshold: 0.06
+  top_k: 300
+  nms_iou: 0.35
+  sahi_original_tiles: true
+  sahi_tile_size: 1536
+  sahi_overlap: 0.25
+  sahi_score_threshold: 0.06
+  sahi_nms_iou: 0.35
+  sahi_top_k: 300
+  sahi_tile_top_k: 160
+  classify_detection_boxes: true
+  class_agnostic_detection: true
+  train_tile_prob: 0.40
+  train_tile_min_scale: 0.38
+  train_tile_max_scale: 0.68
+  train_tile_min_visibility: 0.25
+  init_from_centerdet: true
+  init_source_patterns:
+    - "*_berrymtl_centerdet_agnostic_seed*"
+    - "*_berrymtl_centerdet_agnostic_calibrated_seed*"
+    - "*_berrymtl_centerdet_plus_seed*"
+    - "*_berrymtl_centerdet_plus_calibrated_seed*"
+    - "*_berrymtl_centerdet_calibrated_seed*"
+    - "*_berrymtl_centerdet_seed*"
+
+ours_centerdet_decoupled:
+  method: berrymtl_centerdet_decoupled
+  display_name: BerryMTL-DecoupledCenterDet (ours)
+  model_name: convnextv2_tiny.fcmae_ft_in22k_in1k
+  image_size: 512
+  batch_size: 3
+  epochs: 30
+  early_stopping_patience: 7
+  lr: 0.00007
+  weight_decay: 0.04
+  decoder_channels: 128
+  roi_channels: 192
+  roi_size: 7
+  count_loss_weight: 0.025
+  dice_loss_weight: 0.55
+  classification_loss_weight: 0.65
+  detection_loss_weight: 0.95
+  density_loss_weight: 0.025
+  density_count_loss_weight: 0.15
+  contrastive_loss_weight: 0.06
+  contrastive_temperature: 0.12
+  classification_score_weight: 0.28
+  count_score_weight: 0.002
+  detection_score_weight: 0.010
+  label_smoothing: 0.03
+  score_threshold: 0.06
+  top_k: 300
+  nms_iou: 0.35
+  classify_detection_boxes: true
+  class_agnostic_detection: true
+  decoupled_decoder: true
+  init_from_centerdet: true
+  init_source_patterns:
+    - "*_berrymtl_centerdet_agnostic_seed*"
+    - "*_berrymtl_centerdet_agnostic_calibrated_seed*"
+    - "*_berrymtl_centerdet_plus_seed*"
+    - "*_berrymtl_centerdet_plus_calibrated_seed*"
+    - "*_berrymtl_centerdet_tiletrain_seed*"
+    - "*_berrymtl_centerdet_tiletrain_calibrated_seed*"
+    - "*_berrymtl_centerdet_calibrated_seed*"
+    - "*_berrymtl_centerdet_seed*"
+
+ours_centerdet_decoupled_residual:
+  method: berrymtl_centerdet_decoupled_residual
+  display_name: BerryMTL-DecoupledCenterDet+ResidualCount (ours)
+  model_name: convnextv2_tiny.fcmae_ft_in22k_in1k
+  image_size: 512
+  batch_size: 3
+  epochs: 30
+  early_stopping_patience: 7
+  lr: 0.00007
+  weight_decay: 0.04
+  decoder_channels: 128
+  roi_channels: 192
+  roi_size: 7
+  count_loss_weight: 0.025
+  dice_loss_weight: 0.55
+  classification_loss_weight: 0.65
+  detection_loss_weight: 0.95
+  density_loss_weight: 0.025
+  density_count_loss_weight: 0.15
+  contrastive_loss_weight: 0.06
+  contrastive_temperature: 0.12
+  classification_score_weight: 0.28
+  count_score_weight: 0.002
+  detection_score_weight: 0.010
+  label_smoothing: 0.03
+  score_threshold: 0.06
+  top_k: 300
+  nms_iou: 0.35
+  classify_detection_boxes: true
+  class_agnostic_detection: true
+  decoupled_decoder: true
+  dense_count_residual: true
+  init_from_centerdet: true
+  init_source_patterns:
+    - "*_berrymtl_centerdet_agnostic_seed*"
+    - "*_berrymtl_centerdet_agnostic_calibrated_seed*"
+    - "*_berrymtl_centerdet_plus_seed*"
+    - "*_berrymtl_centerdet_plus_calibrated_seed*"
+    - "*_berrymtl_centerdet_tiletrain_seed*"
+    - "*_berrymtl_centerdet_tiletrain_calibrated_seed*"
+    - "*_berrymtl_centerdet_calibrated_seed*"
+    - "*_berrymtl_centerdet_seed*"
+
+ours_centerdet_shared_matched:
+  method: berrymtl_centerdet_shared_matched
+  display_name: BerryMTL-SharedCenterDet Matched (ours)
+  model_name: convnextv2_tiny.fcmae_ft_in22k_in1k
+  image_size: 512
+  batch_size: 3
+  epochs: 30
+  early_stopping_patience: 7
+  lr: 0.00007
+  weight_decay: 0.04
+  decoder_channels: 128
+  roi_channels: 192
+  roi_size: 7
+  count_loss_weight: 0.025
+  dice_loss_weight: 0.55
+  classification_loss_weight: 0.65
+  detection_loss_weight: 0.95
+  density_loss_weight: 0.025
+  density_count_loss_weight: 0.15
+  contrastive_loss_weight: 0.06
+  contrastive_temperature: 0.12
+  classification_score_weight: 0.28
+  count_score_weight: 0.002
+  detection_score_weight: 0.010
+  label_smoothing: 0.03
+  score_threshold: 0.06
+  top_k: 300
+  nms_iou: 0.35
+  classify_detection_boxes: true
+  class_agnostic_detection: true
+  decoupled_decoder: false
+  init_from_centerdet: true
+  init_source_patterns:
+    - "*_berrymtl_centerdet_agnostic_seed*"
+    - "*_berrymtl_centerdet_agnostic_calibrated_seed*"
+    - "*_berrymtl_centerdet_plus_seed*"
+    - "*_berrymtl_centerdet_plus_calibrated_seed*"
+    - "*_berrymtl_centerdet_tiletrain_seed*"
+    - "*_berrymtl_centerdet_tiletrain_calibrated_seed*"
+    - "*_berrymtl_centerdet_calibrated_seed*"
+    - "*_berrymtl_centerdet_seed*"
+
+ours_centerdet_aligned_highres:
+  method: berrymtl_centerdet_aligned_highres
+  display_name: BerryMTL-AlignedHighResCenterDet (ours)
+  model_name: convnextv2_tiny.fcmae_ft_in22k_in1k
+  image_size: 512
+  batch_size: 3
+  epochs: 30
+  early_stopping_patience: 7
+  lr: 0.00006
+  weight_decay: 0.04
+  decoder_channels: 128
+  roi_channels: 192
+  roi_size: 7
+  count_loss_weight: 0.02
+  dice_loss_weight: 0.55
+  classification_loss_weight: 0.65
+  detection_loss_weight: 1.05
+  density_loss_weight: 0.025
+  density_count_loss_weight: 0.12
+  contrastive_loss_weight: 0.06
+  contrastive_temperature: 0.12
+  classification_score_weight: 0.28
+  count_score_weight: 0.002
+  detection_score_weight: 0.012
+  label_smoothing: 0.03
+  score_threshold: 0.02
+  top_k: 350
+  nms_iou: 0.35
+  classify_detection_boxes: true
+  class_agnostic_detection: true
+  decoupled_decoder: true
+  dense_count_residual: true
+  task_aligned_detection: true
+  highres_detection: true
+  roi_global_context: true
+  init_from_centerdet: true
+  init_source_patterns:
+    - "*_berrymtl_centerdet_decoupled_residual_seed*"
+    - "*_berrymtl_centerdet_decoupled_residual_calibrated_seed*"
+    - "*_berrymtl_centerdet_tiletrain_seed*"
+    - "*_berrymtl_centerdet_tiletrain_calibrated_seed*"
+    - "*_berrymtl_centerdet_agnostic_seed*"
+    - "*_berrymtl_centerdet_agnostic_calibrated_seed*"
+
+ours_centerdet_highres_residual:
+  method: berrymtl_centerdet_highres_residual
+  display_name: BerryMTL-HighResCenterDet+ResidualCount (ours)
+  model_name: convnextv2_tiny.fcmae_ft_in22k_in1k
+  image_size: 512
+  batch_size: 3
+  epochs: 30
+  early_stopping_patience: 7
+  lr: 0.00006
+  weight_decay: 0.04
+  decoder_channels: 128
+  roi_channels: 192
+  roi_size: 7
+  count_loss_weight: 0.02
+  dice_loss_weight: 0.55
+  classification_loss_weight: 0.65
+  detection_loss_weight: 1.05
+  density_loss_weight: 0.025
+  density_count_loss_weight: 0.12
+  contrastive_loss_weight: 0.06
+  contrastive_temperature: 0.12
+  classification_score_weight: 0.28
+  count_score_weight: 0.002
+  detection_score_weight: 0.012
+  label_smoothing: 0.03
+  score_threshold: 0.02
+  top_k: 350
+  nms_iou: 0.35
+  classify_detection_boxes: true
+  class_agnostic_detection: true
+  decoupled_decoder: true
+  dense_count_residual: true
+  highres_detection: true
+  roi_global_context: true
+  init_from_centerdet: true
+  init_source_patterns:
+    - "*_berrymtl_centerdet_decoupled_residual_seed*"
+    - "*_berrymtl_centerdet_decoupled_residual_calibrated_seed*"
+    - "*_berrymtl_centerdet_tiletrain_seed*"
+    - "*_berrymtl_centerdet_tiletrain_calibrated_seed*"
+    - "*_berrymtl_centerdet_agnostic_seed*"
+    - "*_berrymtl_centerdet_agnostic_calibrated_seed*"
+
+ours_centerdet_hitile_quality:
+  method: berrymtl_centerdet_hitile_quality
+  display_name: BerryMTL-HiTile-QualityDet (ours)
+  model_name: convnextv2_tiny.fcmae_ft_in22k_in1k
+  image_size: 768
+  batch_size: 2
+  epochs: 28
+  early_stopping_patience: 7
+  lr: 0.000045
+  weight_decay: 0.04
+  decoder_channels: 128
+  roi_channels: 192
+  roi_size: 7
+  count_loss_weight: 0.018
+  dice_loss_weight: 0.52
+  classification_loss_weight: 0.65
+  detection_loss_weight: 1.20
+  density_loss_weight: 0.025
+  density_count_loss_weight: 0.10
+  contrastive_loss_weight: 0.05
+  contrastive_temperature: 0.12
+  classification_score_weight: 0.28
+  count_score_weight: 0.002
+  detection_score_weight: 0.012
+  label_smoothing: 0.03
+  score_threshold: 0.008
+  top_k: 450
+  nms_iou: 0.32
+  classify_detection_boxes: true
+  class_agnostic_detection: true
+  decoupled_decoder: true
+  dense_count_residual: true
+  task_aligned_detection: true
+  highres_detection: true
+  roi_global_context: true
+  train_tile_prob: 0.55
+  train_tile_min_scale: 0.30
+  train_tile_max_scale: 0.58
+  train_tile_min_visibility: 0.20
+  segmentation_support_power: 0.35
+  segmentation_support_threshold: 0.035
+  count_aware_topk: true
+  count_aware_multiplier: 1.60
+  count_aware_bias: 12.0
+  count_aware_min: 18
+  count_aware_max: 110
+  init_from_centerdet: true
+  init_source_patterns:
+    - "*_berrymtl_centerdet_aligned_highres_calibrated_seed*"
+    - "*_berrymtl_centerdet_aligned_highres_seed*"
+    - "*_berrymtl_centerdet_highres_residual_calibrated_seed*"
+    - "*_berrymtl_centerdet_highres_residual_seed*"
+    - "*_berrymtl_centerdet_decoupled_residual_calibrated_seed*"
+    - "*_berrymtl_centerdet_decoupled_residual_seed*"
+    - "*_berrymtl_centerdet_tiletrain_calibrated_seed*"
+    - "*_berrymtl_centerdet_tiletrain_seed*"
+
+ours_centerdet_teacher_aligned:
+  method: berrymtl_teacher_aligned_det
+  display_name: BerryMTL-TeacherAlignedDet (ours)
+  model_name: convnextv2_tiny.fcmae_ft_in22k_in1k
+  image_size: 768
+  batch_size: 2
+  epochs: 24
+  early_stopping_patience: 6
+  lr: 0.000035
+  weight_decay: 0.04
+  decoder_channels: 128
+  roi_channels: 192
+  roi_size: 7
+  count_loss_weight: 0.016
+  dice_loss_weight: 0.52
+  classification_loss_weight: 0.72
+  detection_loss_weight: 1.25
+  density_loss_weight: 0.025
+  density_count_loss_weight: 0.09
+  contrastive_loss_weight: 0.05
+  contrastive_temperature: 0.12
+  roi_quality_loss_weight: 0.28
+  roi_quality_jitter_count: 2
+  roi_quality_background_count: 8
+  roi_quality_inference_power: 0.45
+  roi_focal_gamma: 1.35
+  roi_class_weight_power: 1.18
+  classification_score_weight: 0.30
+  count_score_weight: 0.002
+  detection_score_weight: 0.012
+  label_smoothing: 0.025
+  score_threshold: 0.008
+  top_k: 450
+  nms_iou: 0.32
+  classify_detection_boxes: true
+  class_agnostic_detection: true
+  decoupled_decoder: true
+  dense_count_residual: true
+  task_aligned_detection: true
+  highres_detection: true
+  roi_global_context: true
+  train_image_sampling_power: 0.55
+  train_tile_prob: 0.60
+  train_tile_min_scale: 0.30
+  train_tile_max_scale: 0.58
+  train_tile_min_visibility: 0.20
+  train_tile_anchor_class_power: 0.75
+  segmentation_support_power: 0.35
+  segmentation_support_threshold: 0.035
+  count_aware_topk: true
+  count_aware_multiplier: 1.60
+  count_aware_bias: 12.0
+  count_aware_min: 18
+  count_aware_max: 110
+  segmentation_box_refine: true
+  segmentation_box_refine_threshold: 0.25
+  segmentation_box_refine_expansion: 0.08
+  segmentation_box_refine_blend: 0.25
+  segmentation_box_refine_min_pixels: 6
+  init_from_centerdet: true
+  init_source_patterns:
+    - "*_berrymtl_centerdet_hitile_quality_calibrated_seed*"
+    - "*_berrymtl_centerdet_hitile_quality_seed*"
+    - "*_berrymtl_centerdet_aligned_highres_calibrated_seed*"
+    - "*_berrymtl_centerdet_aligned_highres_seed*"
+
+task_defaults:
+  classification:
+    image_size: 224
+    batch_size: 24
+    epochs: 40
+    val_metric: macro_f1
+  counting:
+    image_size: 384
+    batch_size: 12
+    epochs: 40
+    target: total
+    val_metric: mae
+  segmentation:
+    image_size: 512
+    batch_size: 4
+    epochs: 60
+    val_metric: miou_foreground
+  detection:
+    image_size: 768
+    batch_size: 2
+    epochs: 50
+    score_threshold: 0.25
+    val_metric: map50
+
+tasks:
+  classification:
+    resnet50:
+      display_name: ResNet-50
+      family: Classic CNN
+      model_name: resnet50.a1_in1k
+    resnet50_balanced:
+      display_name: ResNet-50 Balanced
+      family: Class-balanced CNN
+      model_name: resnet50.a1_in1k
+      balanced_sampler: true
+      class_weighted_loss: true
+      label_smoothing: 0.02
+      lr: 0.00015
+      epochs: 50
+      batch_size: 24
+    efficientnetv2_s:
+      display_name: EfficientNetV2-S
+      family: Advanced scaling
+      model_name: tf_efficientnetv2_s.in21k_ft_in1k
+    convnextv2_tiny:
+      display_name: ConvNeXtV2-T
+      family: Modern CNN
+      model_name: convnextv2_tiny.fcmae_ft_in22k_in1k
+    mobilenetv3_large:
+      display_name: MobileNetV3-Large
+      family: Mobile optimized
+      model_name: mobilenetv3_large_100.ra_in1k
+    efficientnet_b4:
+      display_name: EfficientNet-B4
+      family: Compound scaling
+      model_name: tf_efficientnet_b4.ns_jft_in1k
+    vit_base_patch16_224:
+      display_name: ViT-Base/16
+      family: Vanilla Transformer
+      model_name: vit_base_patch16_224.augreg2_in21k_ft_in1k
+    swin_tiny:
+      display_name: Swin-T
+      family: Hierarchical Transformer
+      model_name: swin_tiny_patch4_window7_224.ms_in1k
+    deit3_small:
+      display_name: DeiT-III-S
+      family: Data-efficient Transformer
+      model_name: deit3_small_patch16_224.fb_in22k_ft_in1k
+    maxvit_tiny:
+      display_name: MaxViT-T
+      family: Hybrid CNN-Transformer
+      model_name: maxvit_tiny_tf_224.in1k
+    dinov2_vitb14_linear:
+      display_name: DINOv2 ViT-B/14 + Linear
+      family: Self-supervised transfer
+      model_name: vit_base_patch14_dinov2.lvd142m
+      linear_probe: true
+      image_size: 518
+
+  counting:
+    count_resnet50:
+      display_name: ResNet-50 Regression
+      family: Direct regression
+      model_name: resnet50.a1_in1k
+    count_efficientnetv2_s:
+      display_name: EfficientNetV2-S Regression
+      family: Direct regression
+      model_name: tf_efficientnetv2_s.in21k_ft_in1k
+    count_convnextv2_tiny:
+      display_name: ConvNeXtV2-T Regression
+      family: Direct regression
+      model_name: convnextv2_tiny.fcmae_ft_in22k_in1k
+    count_mobilenetv3_large:
+      display_name: MobileNetV3-Large Regression
+      family: Direct regression
+      model_name: mobilenetv3_large_100.ra_in1k
+    count_efficientnet_b4:
+      display_name: EfficientNet-B4 Regression
+      family: Direct regression
+      model_name: tf_efficientnet_b4.ns_jft_in1k
+    count_vit_base_patch16_224:
+      display_name: ViT-B/16 Regression
+      family: Transformer regression
+      model_name: vit_base_patch16_224.augreg2_in21k_ft_in1k
+      image_size: 224
+    count_swin_tiny:
+      display_name: Swin-T Regression
+      family: Hierarchical transformer regression
+      model_name: swin_tiny_patch4_window7_224.ms_in1k
+      image_size: 224
+    count_deit3_small:
+      display_name: DeiT-III-S Regression
+      family: Data-efficient transformer regression
+      model_name: deit3_small_patch16_224.fb_in22k_ft_in1k
+      image_size: 224
+    count_maxvit_tiny:
+      display_name: MaxViT-T Regression
+      family: Hybrid regression
+      model_name: maxvit_tiny_tf_224.in1k
+      image_size: 224
+    count_dinov2_vitb14_linear:
+      display_name: DINOv2 ViT-B/14 Linear Regression
+      family: Self-supervised transfer regression
+      model_name: vit_base_patch14_dinov2.lvd142m
+      linear_probe: true
+      image_size: 518
+
+  segmentation:
+    deeplabv3_resnet50:
+      display_name: DeepLabV3 ResNet-50
+      family: Atrous CNN
+      framework: torchvision
+      model_name: deeplabv3_resnet50
+    deeplabv3_resnet101:
+      display_name: DeepLabV3 ResNet-101
+      family: Atrous CNN
+      framework: torchvision
+      model_name: deeplabv3_resnet101
+    deeplabv3_mobilenet_v3_large:
+      display_name: DeepLabV3 MobileNetV3
+      family: Mobile semantic segmentation
+      framework: torchvision
+      model_name: deeplabv3_mobilenet_v3_large
+    fcn_resnet50:
+      display_name: FCN ResNet-50
+      family: Classic semantic segmentation
+      framework: torchvision
+      model_name: fcn_resnet50
+    fcn_resnet101:
+      display_name: FCN ResNet-101
+      family: Classic semantic segmentation
+      framework: torchvision
+      model_name: fcn_resnet101
+    lraspp_mobilenet_v3_large:
+      display_name: LR-ASPP MobileNetV3
+      family: Mobile semantic segmentation
+      framework: torchvision
+      model_name: lraspp_mobilenet_v3_large
+    fpn_resnet50:
+      display_name: FPN ResNet-50
+      family: FPN semantic segmentation
+      framework: timm_fpn
+      model_name: resnet50.a1_in1k
+    fpn_convnextv2_tiny:
+      display_name: FPN ConvNeXtV2-T
+      family: Modern CNN segmentation
+      framework: timm_fpn
+      model_name: convnextv2_tiny.fcmae_ft_in22k_in1k
+    fpn_convnextv2_tiny_tta:
+      display_name: FPN ConvNeXtV2-T + Flip TTA
+      family: Modern CNN segmentation + TTA
+      framework: timm_fpn
+      model_name: convnextv2_tiny.fcmae_ft_in22k_in1k
+      image_size: 512
+    fpn_swin_tiny:
+      display_name: FPN Swin-T
+      family: Transformer segmentation
+      framework: timm_fpn
+      model_name: swin_tiny_patch4_window7_224.ms_in1k
+      image_size: 224
+    fpn_efficientnetv2_s:
+      display_name: FPN EfficientNetV2-S
+      family: Efficient semantic segmentation
+      framework: timm_fpn
+      model_name: tf_efficientnetv2_s.in21k_ft_in1k
+
+  detection:
+    fasterrcnn_resnet50_fpn:
+      display_name: Faster R-CNN ResNet-50 FPN
+      family: Two-stage detector
+      framework: torchvision
+      model_name: fasterrcnn_resnet50_fpn
+    fasterrcnn_resnet50_fpn_thr005:
+      display_name: Faster R-CNN ResNet-50 FPN (thr=0.05)
+      family: Two-stage detector + threshold tuning
+      framework: torchvision
+      model_name: fasterrcnn_resnet50_fpn
+      image_size: 768
+      score_threshold: 0.05
+    fasterrcnn_resnet50_fpn_v2:
+      display_name: Faster R-CNN ResNet-50 FPN v2
+      family: Two-stage detector
+      framework: torchvision
+      model_name: fasterrcnn_resnet50_fpn_v2
+    fasterrcnn_mobilenet_v3_large_fpn:
+      display_name: Faster R-CNN MobileNetV3 FPN
+      family: Mobile two-stage detector
+      framework: torchvision
+      model_name: fasterrcnn_mobilenet_v3_large_fpn
+    fasterrcnn_mobilenet_v3_large_320_fpn:
+      display_name: Faster R-CNN MobileNetV3 320 FPN
+      family: Mobile two-stage detector
+      framework: torchvision
+      model_name: fasterrcnn_mobilenet_v3_large_320_fpn
+    retinanet_resnet50_fpn:
+      display_name: RetinaNet ResNet-50 FPN
+      family: One-stage detector
+      framework: torchvision
+      model_name: retinanet_resnet50_fpn
+    retinanet_resnet50_fpn_v2:
+      display_name: RetinaNet ResNet-50 FPN v2
+      family: One-stage detector
+      framework: torchvision
+      model_name: retinanet_resnet50_fpn_v2
+    fcos_resnet50_fpn:
+      display_name: FCOS ResNet-50 FPN
+      family: Anchor-free detector
+      framework: torchvision
+      model_name: fcos_resnet50_fpn
+    ssd300_vgg16:
+      display_name: SSD300 VGG16
+      family: Single-shot detector
+      framework: torchvision
+      model_name: ssd300_vgg16
+    ssdlite320_mobilenet_v3_large:
+      display_name: SSDLite MobileNetV3
+      family: Mobile single-shot detector
+      framework: torchvision
+      model_name: ssdlite320_mobilenet_v3_large
+    maskrcnn_resnet50_fpn:
+      display_name: Mask R-CNN ResNet-50 FPN
+      family: Instance segmentation detector
+      framework: torchvision
+      model_name: maskrcnn_resnet50_fpn
+
+optional_exports:
+  yolo:
+    enabled: true
+    models: ["yolo11n", "yolo11s", "yolov10n", "yolov8n", "rtdetr-l"]
+  coco:
+    enabled: true

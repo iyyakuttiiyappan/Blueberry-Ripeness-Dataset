@@ -1,51 +1,59 @@
-# Blueberry Ripeness Dataset
+# AerialYield-B2D
 
-This repository contains the code and documentation for a high-resolution greenhouse blueberry ripeness dataset with five ripeness-stage mask annotations.
+**AerialYield-B2D** is a greenhouse blueberry ripeness dataset with RGB images, five-stage ripeness masks and image-level berry-count annotations. In this release, **B2D means BlueBerry Dataset**.
 
-## Dataset
-
-The image and mask data are hosted separately because the curated release is larger than a normal GitHub repository.
-
-Institutional drive download/review folder (please contact iyyakutti.ganapathi@ku.ac.ae):
-
-https://kuacae-my.sharepoint.com/:f:/g/personal/iyyakutti_ganapathi_ku_ac_ae/IgA50zXBVJdqS7uqbg0ZaHjCAUUEo0-4_MDTx5-sVKXWIkI
-
-Primary dataset archive:
-
-- `blueberry_ripeness_real_curated_dataset_v1.zip`
-
-Optional training-only synthetic augmentation archive:
-
-- `blueberry_ripeness_training_only_natural_synthetic_augmentation_v1.zip`
-
-Use the real curated dataset as the primary data record. The synthetic archive is only for optional augmentation experiments and should not be counted as additional independent real observations.
+The dataset name is kept for continuity with the project, but the repository documents the acquisition sources explicitly: the 514-image release contains close-range smartphone images and added video-frame/DJI Fly video-frame samples. This mixture is useful because models can be tested across close inspection views and wider plant-scale greenhouse scouting views.
 
 ## Dataset Summary
 
-- 424 high-resolution real greenhouse RGB images.
-- 13,909 annotated berry instances.
-- Five ripeness classes: `green_immature`, `pale_pink`, `pink_turns_purple`, `fully_ripe`, and `over_ripe`.
-- Per-class binary masks, semantic masks, overall masks, image-level count metadata, and fixed train/validation/test splits.
-- Optional natural synthetic augmentation package for training-only imbalance experiments.
+- RGB images: 514
+- Annotated berry instances: 30,195
+- Ripeness stages: `green_immature`, `pale_pink`, `pink_turns_purple`, `fully_ripe`, `over_ripe`
+- Source modalities: {'smartphone': 424, 'video_frame': 67, 'drone_video_frame': 23}
+- Fixed split: 360 train, 77 validation, 77 test
+- Primary tasks: semantic segmentation, ripeness-stage analysis, berry counting and maturity-distribution estimation
+
+## Data Access
+
+The full image/mask dataset is hosted separately and should be cited through the final data DOI.
+
+- Temporary institutional review folder: https://kuacae-my.sharepoint.com/:f:/g/personal/iyyakutti_ganapathi_ku_ac_ae/IgA50zXBVJdqS7uqbg0ZaHjCAUUEo0-4_MDTx5-sVKXWIkI
+- Final dataset DOI: [Zenodo / Figshare]
+
+This GitHub repository contains code, documentation, metadata examples and paper/support figures. 
 
 ## Repository Contents
 
 ```text
-configs/                 Minimal configuration for segmentation validation
-docs/                    Preprocessing and validation documentation
-figures/                 Small paper-ready overview figures
-metadata_examples/       Small CSV/JSON metadata examples from the release
-scripts/                 Reproducibility scripts
-src/blueberry_multitask/ Shared model-validation utilities
-RUNNING_THE_CODE.md      Step-by-step commands
-DATASET_CARD.md          Dataset card
-requirements.txt         Python dependencies
+configs/              Reproducibility config for the 514-image validation runs
+docs/                 Data access, structure, preprocessing and validation notes
+figures/              Small manuscript/support figures
+metadata_examples/    Schema examples and compact metadata tables
+scripts/              Dataset preparation and validation entry points
+src/                  Python utilities used by the validation scripts
+RUNNING_THE_CODE.md   Step-by-step instructions
+DATASET_CARD.md       Dataset card
+CITATION.cff          Citation metadata placeholder
+requirements.txt      Python dependencies
 ```
 
 ## Quick Start
 
-See [RUNNING_THE_CODE.md](RUNNING_THE_CODE.md) for environment setup, dataset extraction, preprocessing, synthetic augmentation, and model-validation commands.
+```bash
+python -m venv .venv
+source .venv/bin/activate  # Windows: .\.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+pip install -r requirements.txt
+```
+
+Then download the dataset archive from the data record and follow:
+
+```text
+RUNNING_THE_CODE.md
+```
 
 ## Citation
 
-Please cite the accompanying Scientific Data Data Descriptor after publication. A permanent dataset DOI will be added after repository publication.
+Please cite the accompanying Scientific Data Data Descriptor and the final dataset DOI after publication.
+
+

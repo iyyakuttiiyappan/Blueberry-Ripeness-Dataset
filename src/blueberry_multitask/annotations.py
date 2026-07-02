@@ -29,6 +29,7 @@ PALETTE: dict[int, tuple[int, int, int]] = {
     4: (46, 96, 200),
     5: (185, 57, 63),
 }
+MASK_EXTENSIONS = [".png", ".jpg", ".jpeg", ".tif", ".tiff"]
 
 
 @dataclass(frozen=True)
@@ -50,6 +51,20 @@ def _binary_mask_dir(data_root: Path, aliases: list[str]) -> Path:
         if found is not None:
             return found
     raise FileNotFoundError(f"Could not find binary mask folder from aliases: {aliases}")
+
+
+def _find_mask(mask_dir: Path, image_name: str) -> Path:
+    image_path = Path(image_name)
+    candidates = [mask_dir / image_path.name]
+    candidates.extend(mask_dir / f"{image_path.stem}{extension}" for extension in MASK_EXTENSIONS)
+    seen: set[Path] = set()
+    for candidate in candidates:
+        if candidate in seen:
+            continue
+        seen.add(candidate)
+        if candidate.exists():
+            return candidate
+    raise FileNotFoundError(f"Missing mask for {image_name} in {mask_dir}")
 
 
 def _read_counts(workbook: Path, classes: list[str], image_stems: set[str]) -> tuple[pd.DataFrame, dict[str, Any]]:
@@ -78,7 +93,52 @@ def _read_counts(workbook: Path, classes: list[str], image_stems: set[str]) -> t
     return df, audit
 
 
+def _fixed_split_from_manifest(image_df: pd.DataFrame, config: dict[str, Any]) -> pd.DataFrame | None:
+    split_manifest = config.get("paths", {}).get("fixed_split_manifest")
+    if not split_manifest:
+        return None
+
+    manifest_path = Path(split_manifest)
+    if not manifest_path.exists():
+        raise FileNotFoundError(f"Configured fixed split manifest does not exist: {manifest_path}")
+
+    manifest = pd.read_csv(manifest_path)
+    required = {"split"}
+    if not required.issubset(manifest.columns):
+        raise ValueError(f"{manifest_path} must contain a 'split' column.")
+    if "stem" not in manifest.columns:
+        if "image_id" in manifest.columns:
+            manifest["stem"] = manifest["image_id"].astype(str)
+        elif "filename" in manifest.columns:
+            manifest["stem"] = manifest["filename"].astype(str).map(lambda value: Path(value).stem)
+        else:
+            raise ValueError(f"{manifest_path} must contain one of: stem, image_id, filename.")
+
+    allowed = {"train", "val", "test"}
+    manifest = manifest[["stem", "split"]].copy()
+    manifest["stem"] = manifest["stem"].astype(str)
+    manifest["split"] = manifest["split"].astype(str).str.lower()
+    invalid = sorted(set(manifest["split"]) - allowed)
+    if invalid:
+        raise ValueError(f"{manifest_path} contains unsupported split labels: {invalid}")
+    if manifest["stem"].duplicated().any():
+        duplicated = manifest.loc[manifest["stem"].duplicated(), "stem"].head(5).tolist()
+        raise ValueError(f"{manifest_path} contains duplicate split rows, for example: {duplicated}")
+
+    split_by_stem = manifest.set_index("stem")["split"].to_dict()
+    df = image_df.copy()
+    df["split"] = df["stem"].map(split_by_stem)
+    missing = df.loc[df["split"].isna(), "stem"].head(10).tolist()
+    if missing:
+        raise ValueError(f"{manifest_path} is missing split assignments for stems: {missing}")
+    return df.sort_values("stem").reset_index(drop=True)
+
+
 def _safe_split(image_df: pd.DataFrame, config: dict[str, Any]) -> pd.DataFrame:
+    fixed_df = _fixed_split_from_manifest(image_df, config)
+    if fixed_df is not None:
+        return fixed_df
+
     split_cfg = config["split"]
     seed = int(split_cfg.get("seed", 42))
     train_ratio = float(split_cfg["train"])
@@ -334,8 +394,8 @@ def prepare_annotations(config: dict[str, Any], rebuild: bool = False) -> Prepar
             image = ImageOps.exif_transpose(raw_image).convert("RGB")
         aligned_width, aligned_height = image.size
 
-        mask_paths = {name: data_root / name / image_path.name for name in classes}
-        binary_mask_path = binary_dir / image_path.name
+        mask_paths = {name: _find_mask(data_root / name, image_path.name) for name in classes}
+        binary_mask_path = _find_mask(binary_dir, image_path.name)
         missing = [str(path) for path in list(mask_paths.values()) + [binary_mask_path] if not path.exists()]
         if missing:
             missing_masks.extend(missing)

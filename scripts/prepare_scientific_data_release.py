@@ -54,6 +54,7 @@ CLASS_INFO = [
 
 CLASS_NAMES = [item["name"] for item in CLASS_INFO]
 CLASS_IDS = {item["name"]: item["id"] for item in CLASS_INFO}
+MASK_EXTENSIONS = [".png", ".jpg", ".jpeg", ".tif", ".tiff"]
 
 
 @dataclass(frozen=True)
@@ -156,13 +157,28 @@ def list_input_images(data_root: Path) -> list[Path]:
     return images
 
 
+def find_mask_path(data_root: Path, folder: str, image_path: Path) -> Path:
+    mask_dir = data_root / folder
+    candidates = [mask_dir / image_path.name]
+    candidates.extend(mask_dir / f"{image_path.stem}{extension}" for extension in MASK_EXTENSIONS)
+    seen: set[Path] = set()
+    for candidate in candidates:
+        if candidate in seen:
+            continue
+        seen.add(candidate)
+        if candidate.exists():
+            return candidate
+    raise FileNotFoundError(f"Missing {folder} mask for {image_path.name}")
+
+
 def validate_pairing(data_root: Path, image_paths: Iterable[Path]) -> None:
     missing = []
     for image_path in image_paths:
         for folder in ["Overall", *CLASS_NAMES]:
-            mask_path = data_root / folder / image_path.name
-            if not mask_path.exists():
-                missing.append(str(mask_path))
+            try:
+                find_mask_path(data_root, folder, image_path)
+            except FileNotFoundError as exc:
+                missing.append(str(exc))
     if missing:
         preview = "\n".join(missing[:20])
         raise FileNotFoundError(f"Missing image-mask pairs:\n{preview}")
@@ -301,7 +317,10 @@ def assign_balanced_splits(
     repeats: int,
 ) -> tuple[pd.Series, pd.DataFrame]:
     split_names = ["train", "val", "test"]
-    target_sizes = {"train": 296, "val": 64, "test": 64}
+    train_size = int(round(len(manifest) * 0.70))
+    val_size = int(round(len(manifest) * 0.15))
+    test_size = len(manifest) - train_size - val_size
+    target_sizes = {"train": train_size, "val": val_size, "test": test_size}
     total_counts = manifest[[f"{class_name}_objects" for class_name in CLASS_NAMES]].sum().to_numpy(float)
     total_objects = manifest["total_objects"].to_numpy(float)
     target_counts = {name: total_counts * (target_sizes[name] / len(manifest)) for name in split_names}
@@ -456,6 +475,7 @@ def write_dataset_card(
         "",
         f"- RGB greenhouse images: {len(manifest):,}",
         f"- Original acquisition device: {manifest['camera_make'].mode().iloc[0]} {manifest['camera_model'].mode().iloc[0]}",
+        f"- Source modality counts: {manifest['source_modality'].value_counts().to_dict() if 'source_modality' in manifest.columns else 'not recorded'}",
         f"- Annotated berry instances from count sheet: {int(manifest['total_objects'].sum()):,}",
         "- Ripeness stages: green immature, pale pink, pink turns purple, fully ripe, over ripe.",
         "- Label format: per-class binary PNG masks plus one semantic PNG label map per image.",
@@ -576,7 +596,7 @@ def write_technical_validation(
         "",
         "## Mask Conversion Audit",
         "",
-        "The source masks are JPEG files and therefore contain antialiasing/compression edge values. The release converts them to thresholded binary PNG masks using threshold > 127.",
+        "The source masks include JPEG-derived masks from the original 424-image set and binary PNG masks from the added 90-image annotation set. The release converts all source masks to thresholded binary PNG masks using threshold > 127.",
         "",
         f"- Source mask ambiguous edge/compression pixels across class and overall masks: {int(ambiguous_pixels.sum()):,}",
         f"- Images with any class-overlap pixels after thresholding: {int((overlap_audit['overlap_pixels'] > 0).sum()):,}",
@@ -596,7 +616,9 @@ def write_technical_validation(
         "",
         "## Recommended Benchmark Split",
         "",
-        "A deterministic 296/64/64 train/validation/test split was generated to balance image counts and approximate object-count balance across ripeness stages.",
+        f"A deterministic {int(split_stats.loc[split_stats['split'] == 'train', 'images'].iloc[0])}/"
+        f"{int(split_stats.loc[split_stats['split'] == 'val', 'images'].iloc[0])}/"
+        f"{int(split_stats.loc[split_stats['split'] == 'test', 'images'].iloc[0])} train/validation/test split was generated to balance image counts and approximate object-count balance across ripeness stages.",
         "",
         dataframe_to_markdown(split_stats),
         "",
@@ -618,9 +640,9 @@ def write_manuscript_report(
     split_stats: pd.DataFrame,
 ) -> None:
     selling_points = [
-        "High-resolution greenhouse imagery: 424 RGB images at phone-camera resolution, mostly 3000 x 4000 after EXIF orientation.",
+        f"Expanded image volume: {len(manifest):,} RGB images including smartphone greenhouse images and added video-frame/drone-derived image samples.",
         "Fine-grained ripeness taxonomy: five ripeness stages instead of only ripe/unripe or mature/immature.",
-        "Dense annotation utility: 13,909 berry instances are counted at image level, with per-class pixel masks for segmentation.",
+        f"Dense annotation utility: {int(manifest['total_objects'].sum()):,} berry instances are counted at image level, with per-class pixel masks for segmentation.",
         "Multi-task potential: semantic segmentation, multilabel segmentation, berry counting, maturity distribution estimation, and harvest-readiness analysis.",
         "Release-readiness: lossless thresholded PNG masks, semantic maps, class map, split files, file hashes, QA tables, and visual overlays.",
     ]
@@ -641,7 +663,7 @@ def write_manuscript_report(
         f"- Annotated berries: {int(manifest['total_objects'].sum()):,}",
         f"- Classes: {len(CLASS_NAMES)} ripeness stages",
         f"- Image dimensions after orientation: {manifest.groupby(['width', 'height']).size().to_dict()}",
-        f"- Acquisition device: {manifest['camera_make'].mode().iloc[0]} {manifest['camera_model'].mode().iloc[0]}",
+        f"- Acquisition/device source counts: {manifest['source_modality'].value_counts().to_dict() if 'source_modality' in manifest.columns else 'not recorded'}",
         f"- Acquisition date range in EXIF: {manifest['datetime_original'].min()} to {manifest['datetime_original'].max()}",
         "",
         "## Class Distribution",
@@ -703,7 +725,7 @@ def write_manuscript_report(
         "",
         "## Abstract Skeleton",
         "",
-        "We present a high-resolution greenhouse blueberry image dataset containing 424 RGB images and five ripeness-stage mask layers. The dataset includes image-level counts for 13,909 annotated berries across green immature, pale pink, pink-turns-purple, fully ripe, and over-ripe stages. We provide lossless binary masks, semantic label maps, metadata, recommended train/validation/test splits, and technical validation reports to support ripeness segmentation, counting, and harvest-readiness analysis.",
+        f"We present a high-resolution blueberry image dataset containing {len(manifest):,} RGB images and five ripeness-stage mask layers. The dataset includes image-level counts for {int(manifest['total_objects'].sum()):,} annotated berries across green immature, pale pink, pink-turns-purple, fully ripe, and over-ripe stages. We provide lossless binary masks, semantic label maps, metadata, recommended train/validation/test splits, and technical validation reports to support ripeness segmentation, counting, and harvest-readiness analysis.",
         "",
         "## Figure Plan",
         "",
@@ -738,6 +760,15 @@ def process_release(data_root: Path, paths: ReleasePaths, threshold: int) -> tup
     image_paths = list_input_images(data_root)
     validate_pairing(data_root, image_paths)
     count_lookup = count_df.set_index("filename").to_dict(orient="index")
+    source_metadata_path = data_root / "metadata" / "source_metadata.csv"
+    source_lookup: dict[str, dict[str, object]] = {}
+    if source_metadata_path.exists():
+        source_lookup = (
+            pd.read_csv(source_metadata_path)
+            .fillna("")
+            .set_index("filename")
+            .to_dict(orient="index")
+        )
 
     rows = []
     overlap_rows = []
@@ -757,6 +788,17 @@ def process_release(data_root: Path, paths: ReleasePaths, threshold: int) -> tup
             camera_model = str(exif.get(272, "") or "")
             datetime_original = str(exif.get(36867, "") or exif.get(306, "") or "")
             image = ImageOps.exif_transpose(raw_image).convert("RGB")
+        source_info = source_lookup.get(filename, {})
+        source_modality = str(source_info.get("source_modality", "") or "unrecorded")
+        filename_datetime = str(source_info.get("filename_datetime", "") or "")
+        if not datetime_original and filename_datetime:
+            datetime_original = filename_datetime
+        if not camera_make and source_modality == "drone_video_frame":
+            camera_make = "DJI"
+        if not camera_model and source_modality == "drone_video_frame":
+            camera_model = "DJI Fly video frame"
+        if not camera_model and source_modality == "video_frame":
+            camera_model = "video frame"
 
         release_image_path = paths.images / filename
         image.save(release_image_path, format="JPEG", quality=95, optimize=True)
@@ -769,7 +811,7 @@ def process_release(data_root: Path, paths: ReleasePaths, threshold: int) -> tup
         ambiguous_total = 0
 
         for class_name in CLASS_NAMES:
-            source_mask_path = data_root / class_name / filename
+            source_mask_path = find_mask_path(data_root, class_name, image_path)
             with Image.open(source_mask_path) as source_mask:
                 mask, ambiguous_pixels = threshold_mask(source_mask, threshold)
             if mask.shape != (height, width):
@@ -783,7 +825,7 @@ def process_release(data_root: Path, paths: ReleasePaths, threshold: int) -> tup
             component_counts[class_name] = connected_component_count(mask)
             ambiguous_total += ambiguous_pixels
 
-        with Image.open(data_root / "Overall" / filename) as source_overall:
+        with Image.open(find_mask_path(data_root, "Overall", image_path)) as source_overall:
             overall_mask, overall_ambiguous = threshold_mask(source_overall, threshold)
         save_binary_png(overall_mask, paths.overall_masks / f"{image_path.stem}.png")
         ambiguous_total += overall_ambiguous
@@ -805,6 +847,10 @@ def process_release(data_root: Path, paths: ReleasePaths, threshold: int) -> tup
         row = {
             "image_id": image_path.stem,
             "filename": filename,
+            "source_set": str(source_info.get("source_set", "") or ""),
+            "source_modality": source_modality,
+            "metadata_source": str(source_info.get("metadata_source", "") or ""),
+            "filename_datetime": filename_datetime,
             "image_path": f"dataset/images/{filename}",
             "semantic_mask_path": f"dataset/masks_semantic/{image_path.stem}.png",
             "overall_mask_path": f"dataset/masks_overall/{image_path.stem}.png",
@@ -857,6 +903,10 @@ def process_release(data_root: Path, paths: ReleasePaths, threshold: int) -> tup
     front_cols = [
         "image_id",
         "filename",
+        "source_set",
+        "source_modality",
+        "metadata_source",
+        "filename_datetime",
         "split",
         "image_path",
         "semantic_mask_path",
